@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Capy Tools - Amazon Forecast Extractor</title>
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <link rel="stylesheet" href="styles/common.css">
+    <link rel="stylesheet" href="styles/main.css">
+</head>
+<body>
+    <div class="window-container">
+        <!-- Add waves container before the header -->
+        <div class="wave-container">
+            <div class="wave"></div>
+            <div class="wave"></div>
+            <div class="wave"></div>
+            <div class="surfing-capybara"></div>
+        </div>
+        
+        <!-- Header -->
+        <nav class="nav-wrapper">
+            <div class="header-content">
+                <div class="profile-section">
+                    <div class="profile-image">
+                        <img src="../assets/icon128.png" 
+                             alt="Capy Tools" 
+                             class="circle responsive-img">
+                    </div>
+                    <div class="title-section">
+                        <h1>Capy Tools</h1>
+                        <p>Amazon Forecast Extractor</p>
+                    </div>
+                </div>
+                <div class="status-wrapper">
+                    <span class="status-badge" id="statusBadge">Ready</span>
+                    <button class="reload-btn" id="reloadBtn">
+                        <i class="material-icons">refresh</i>
+                    </button>
+                </div>
+            </div>
+        </nav>
+
+        <main class="main-content">
+            <div class="row">
+                <button id="extractBtn" class="extract-btn">
+                    <i class="material-icons">cloud_download</i>
+                    Extract Data
+                </button>
+
+                <div class="progress-container" id="progressContainer">
+                    <div class="progress-text">
+                        Processing: <span id="currentAsin">-</span>
+                    </div>
+                    <div class="progress-bar">
+                        <div class="progress" id="progress"></div>
+                    </div>
+                    <div class="progress-stats">
+                        <span id="processedCount">0</span> / <span id="totalCount">0</span> ASINs
+                    </div>
+                </div>
+
+                <div class="error-container" id="errorContainer">
+                    <div class="error-title">
+                        <i class="material-icons">error_outline</i>
+                        <span>Error Details</span>
+                    </div>
+                    <div class="error-list" id="errorList"></div>
+                </div>
+            </div>
+        </main>
+
+        <footer class="footer">
+            <p>Powered by Capybaras 🦫</p>
+        </footer>
+    </div>
+    <script src="scripts/window.js"></script>
+</body>
+</html> 

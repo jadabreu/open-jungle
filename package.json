@@ -1,0 +1,17 @@
+{
+  "name": "capy-tools",
+  "version": "1.0.0",
+  "description": "Chrome extension for extracting forecast data from Amazon pages",
+  "scripts": {
+    "build": "node scripts/build.js",
+    "watch": "node scripts/build.js --watch",
+    "package": "node scripts/build.js && cd dist && zip -r extension.zip .",
+    "postinstall": "npm run build"
+  },
+  "author": "",
+  "license": "MIT",
+  "devDependencies": {
+    "archiver": "^5.3.1",
+    "fs-extra": "^11.1.1"
+  }
+} 

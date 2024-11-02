@@ -1,0 +1,53 @@
+{
+  "manifest_version": 3,
+  "name": "Capy Tools - Forecast Extractor",
+  "version": "1.0",
+  "description": "Extract forecast data from Amazon Seller Central",
+  "permissions": [
+    "activeTab",
+    "scripting",
+    "downloads",
+    "tabs"
+  ],
+  "host_permissions": [
+    "https://*.amazon.com/*"
+  ],
+  "content_security_policy": {
+    "extension_pages": "script-src 'self'; object-src 'self'; style-src 'self' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com"
+  },
+  "background": {
+    "service_worker": "scripts/background.js"
+  },
+  "content_scripts": [
+    {
+      "matches": ["https://*.amazon.com/*"],
+      "js": [
+        "scripts/utils/helpers.js",
+        "scripts/utils/extractor.js",
+        "scripts/forecastExtractor.js",
+        "scripts/content.js"
+      ]
+    }
+  ],
+  "web_accessible_resources": [{
+    "resources": [
+      "window.html",
+      "styles/common.css",
+      "styles/main.css",
+      "assets/*"
+    ],
+    "matches": ["https://*.amazon.com/*"]
+  }],
+  "action": {
+    "default_icon": {
+      "16": "assets/icon16.png",
+      "48": "assets/icon48.png",
+      "128": "assets/icon128.png"
+    }
+  },
+  "icons": {
+    "16": "assets/icon16.png",
+    "48": "assets/icon48.png",
+    "128": "assets/icon128.png"
+  }
+} 
