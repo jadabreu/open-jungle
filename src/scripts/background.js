@@ -4,71 +4,123 @@ let state = {
     isExtracting: false
 };
 
-// Listen for messages from content scripts
-chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
-    // Always return false if we're not sending an async response
-    if (request.type === 'immediate_action') {
-        // Handle synchronous actions
-        sendResponse({ status: 'success' });
-        return false; // Synchronous response
+// CSV Generator class definition
+class CsvGenerator {
+    constructor() {
+        this.headers = ['ASIN'];
+        // We'll set the week headers dynamically based on the setting
     }
-    
-    // For async operations, return true and handle with Promise
-    if (request.type === 'async_action') {
-        // Ensure we keep the message channel open
-        (async () => {
-            try {
-                // Your async operation here
-                const result = await someAsyncOperation();
-                sendResponse({ status: 'success', data: result });
-            } catch (error) {
-                sendResponse({ status: 'error', error: error.message });
-            }
-        })();
-        return true; // Will respond asynchronously
-    }
-    
-    return false; // Default synchronous response
-});
 
-// Example async operation
-async function someAsyncOperation() {
-    return new Promise(resolve => {
-        setTimeout(() => {
-            resolve('Operation completed');
-        }, 1000);
-    });
+    async generateCsv(data) {
+        try {
+            const { forecastStart } = await chrome.storage.sync.get({ forecastStart: 'currentWeek' });
+            console.log('Generating CSV with data:', data, 'forecastStart:', forecastStart);
+            
+            // Get the first item's forecasts to determine the current week
+            const firstItem = data[0];
+            if (!firstItem?.forecasts?.length) {
+                throw new Error('No forecast data available');
+            }
+
+            // Generate headers based on setting
+            if (forecastStart === 'week1') {
+                // Start from Week 1 through Week 52
+                this.headers = ['ASIN'];
+                for (let i = 1; i <= 52; i++) {
+                    this.headers.push(`Week ${i}`);
+                }
+            } else {
+                // Start from current week through same week next year
+                const startWeek = firstItem.forecasts[0].week;
+                this.headers = ['ASIN'];
+                let week = startWeek;
+                for (let i = 0; i < 52; i++) {
+                    this.headers.push(`Week ${week}`);
+                    week = week === 52 ? 1 : week + 1;
+                }
+            }
+            
+            const csvContent = [
+                this.headers.join(','),
+                ...this.formatDataRows(data, forecastStart)
+            ].join('\n');
+            
+            return csvContent;
+        } catch (error) {
+            console.error('CSV Generation Error:', error);
+            throw new Error(`CSV generation failed: ${error.message}`);
+        }
+    }
+
+    formatDataRows(data, forecastStart) {
+        const rows = [];
+        for (const item of data) {
+            if (!item.forecasts || !Array.isArray(item.forecasts)) {
+                console.error('Invalid forecast data for ASIN:', item.asin);
+                continue;
+            }
+
+            // Start with ASIN
+            const row = [item.asin];
+            
+            // Initialize array with 52 empty slots
+            const orderedForecasts = new Array(52).fill('');
+            
+            if (forecastStart === 'week1') {
+                // Place each forecast in its corresponding week slot
+                item.forecasts.forEach(forecast => {
+                    // week - 1 because array is 0-based but weeks are 1-based
+                    orderedForecasts[forecast.week - 1] = forecast.units;
+                });
+            } else {
+                // For currentWeek mode, just add forecasts sequentially
+                for (let i = 0; i < 52; i++) {
+                    const forecast = item.forecasts[i];
+                    orderedForecasts[i] = forecast ? forecast.units : '';
+                }
+            }
+            
+            // Add all values to the row
+            row.push(...orderedForecasts);
+            
+            rows.push(row.join(','));
+        }
+        return rows;
+    }
 }
 
+// Handle messages from content script
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
-    console.log('Background Received Message:', message);
-    switch (message.action) {
-        case 'storeData':
-            state.extractedData = message.data;
-            state.failedAsins = message.failures || [];
-            console.log('Data stored in background state:', state);
-
-            // Generate CSV and create data URL
-            try {
-                const csvContent = generateCsv(state.extractedData);
-                const dataUrl = 'data:text/csv;charset=utf-8,' + encodeURIComponent(csvContent);
+    if (message.action === 'storeData') {
+        // Create CSV content immediately and respond
+        const csvGenerator = new CsvGenerator();
+        csvGenerator.generateCsv(message.data)
+            .then(csvContent => {
+                const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+                const filename = `forecast_data_${timestamp}.csv`;
+                const csvBase64 = btoa(unescape(encodeURIComponent(csvContent)));
+                const dataUrl = 'data:text/csv;base64,' + csvBase64;
                 
-                chrome.downloads.download({
+                return chrome.downloads.download({
                     url: dataUrl,
-                    filename: `forecast_data_${new Date().toISOString().split('T')[0]}.csv`,
+                    filename: filename,
                     saveAs: false
-                }, (downloadId) => {
-                    if (downloadId) {
-                        console.log(`CSV download initiated with ID: ${downloadId}`);
-                    } else {
-                        console.error('CSV download failed:', chrome.runtime.lastError);
-                    }
                 });
-            } catch (error) {
+            })
+            .then(() => {
+                sendResponse({ success: true });
+            })
+            .catch(error => {
                 console.error('CSV generation/download error:', error);
-            }
-            break;
+                sendResponse({ success: false, error: error.message });
+            });
+            
+        // Return true synchronously
+        return true;
     }
+    
+    // For other messages, respond synchronously
+    return false;
 });
 
 // Listen for tab updates to reset state when navigating away
@@ -82,38 +134,6 @@ chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
         console.log('Background state reset due to tab loading:', tabId);
     }
 });
-
-function generateCsv(data) {
-    if (!Array.isArray(data) || data.length === 0) {
-        throw new Error('Invalid data format for CSV generation');
-    }
-
-    // Get current week number
-    const currentDate = new Date();
-    const startOfYear = new Date(currentDate.getFullYear(), 0, 1);
-    const currentWeek = Math.ceil((((currentDate - startOfYear) / 86400000) + startOfYear.getDay() + 1) / 7);
-
-    // Generate headers with correct week numbers
-    const weekHeaders = Array.from({ length: 41 }, (_, i) => {
-        const weekNum = ((currentWeek + i) <= 52) 
-            ? (currentWeek + i) 
-            : ((currentWeek + i) - 52);
-        return `Week ${weekNum}`;
-    });
-    const headers = ['ASIN', ...weekHeaders];
-
-    // Generate rows
-    const rows = [headers.join(',')];
-
-    // Add data rows
-    data.forEach(item => {
-        const row = [item.asin, ...item.units];
-        rows.push(row.join(','));
-    });
-
-    console.log('CSV Content Generated:', rows.join('\n'));
-    return rows.join('\n');
-}
 
 // Handle extension icon click
 chrome.action.onClicked.addListener((tab) => {

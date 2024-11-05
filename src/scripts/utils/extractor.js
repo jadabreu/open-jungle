@@ -123,11 +123,37 @@ window.ForecastDataExtractor = class ForecastDataExtractor {
             const percentage = (point.y - lowerTick.y) / (upperTick.y - lowerTick.y);
             const value = lowerTick.value + percentage * (upperTick.value - lowerTick.value);
 
+            // Calculate week number with rollover
+            const currentWeek = this.getCurrentWeekNumber();
+            const currentYear = new Date().getFullYear();
+            let weekNumber = currentWeek + index;
+            if (weekNumber > 52) {
+                weekNumber = weekNumber - 52;
+            }
+
             return {
-                week: index + 1,
+                week: weekNumber,
+                year: weekNumber < currentWeek ? currentYear + 1 : currentYear,
                 units: Math.round(value)
             };
         });
+    }
+
+    getCurrentWeekNumber() {
+        // Find the week label in Amazon's UI
+        const weekLabel = document.querySelector('.forecast-week-label');
+        if (weekLabel) {
+            const match = weekLabel.textContent.match(/Week (\d+)/);
+            if (match) {
+                return parseInt(match[1], 10);
+            }
+        }
+        
+        // Fallback: Calculate current week
+        const now = new Date();
+        const start = new Date(now.getFullYear(), 0, 1);
+        const week = Math.ceil(((now - start) / 86400000 + start.getDay() + 1) / 7);
+        return week;
     }
 
     async initializeConversionParameters() {

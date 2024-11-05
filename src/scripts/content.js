@@ -35,9 +35,21 @@ if (!window.contentScriptInitialized) {
                     return true;
                 }
             });
+
+            // Add settings handling
+            this.settings = null;
+            this.loadSettings();
+        }
+
+        async loadSettings() {
+            const result = await chrome.storage.sync.get({
+                forecastStart: 'week1'
+            });
+            this.settings = result;
         }
 
         async startExtraction() {
+            await this.loadSettings(); // Ensure settings are loaded
             try {
                 const { forecastButtons, asins } = await this.dataExtractor.initialize();
                 console.log('Forecast Buttons and ASINs:', forecastButtons, asins);

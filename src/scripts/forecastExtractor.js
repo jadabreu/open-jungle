@@ -123,17 +123,19 @@ window.ForecastUIHandler = class ForecastUIHandler {
             await this.openForecastView(button);
             await this.setSliderTo40Weeks();
             const meanData = await dataExtractor.extractForecastData(asin);
-            console.log(`Extracted data for ASIN: ${asin}`, meanData);
-
+            
             this.data.push({
                 asin: asin,
-                units: meanData.map(point => point.units)
+                startWeek: meanData[0].week,
+                startYear: meanData[0].year,
+                forecasts: meanData.map(point => ({
+                    week: point.week,
+                    year: point.year,
+                    units: point.units
+                }))
             });
 
-            console.log(`Data pushed for ASIN: ${asin}`, this.data[this.data.length - 1]);
-
             await this.closeForecastView(button);
-            console.log(`Processed ASIN: ${asin}`);
             return true;
         } catch (error) {
             console.error(`Error processing ASIN ${asin}:`, error);
