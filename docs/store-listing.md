@@ -54,7 +54,6 @@ Required Permissions Explained:
 • host_permissions (amazon.com): Required to access forecast data from Amazon Seller Central
 • activeTab: Required to interact with forecast graphs - only activated when you click "Extract Data" on an Amazon page
 • downloads: Required to save the extracted data as CSV
-• storage: Used to temporarily store forecast data during extraction
 • scripting: Needed to interact with the forecast visualization
 
 All permissions are used solely for data extraction functionality. The extension:
