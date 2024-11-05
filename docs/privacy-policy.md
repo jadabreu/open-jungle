@@ -1,12 +1,12 @@
-# Privacy Policy for Capy Tools
+# Privacy Policy for Open Jungle
 
 Last Updated: [Current Date]
 
 ## Overview
-Capy Tools is a browser extension that helps Amazon sellers extract forecast data. We are committed to protecting your privacy and ensuring transparency about data handling.
+Open Jungle is a browser extension that helps Amazon sellers extract forecast data. We are committed to protecting your privacy and ensuring transparency about data handling.
 
 ## Data Collection
-Capy Tools does not:
+Open Jungle does not:
 - Collect any personal information
 - Store any user data
 - Send data to external servers

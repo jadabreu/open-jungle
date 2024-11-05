@@ -1,4 +1,4 @@
-# Forecast Data Extractor 🚀
+# Open Jungle 🌴
 
 A Chrome Extension that automates the extraction of forecast data from Amazon's Restock Inventory Recommendations page. Get your forecast data in a clean CSV format with just one click!
 

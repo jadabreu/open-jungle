@@ -1,5 +1,5 @@
 {
-  "name": "capy-tools",
+  "name": "open-jungle",
   "version": "1.0.0",
   "description": "Chrome extension for extracting forecast data from Amazon pages",
   "scripts": {

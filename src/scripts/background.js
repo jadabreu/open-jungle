@@ -88,9 +88,18 @@ function generateCsv(data) {
         throw new Error('Invalid data format for CSV generation');
     }
 
-    // Generate headers (ASIN, Week 1, Week 2, ...)
-    const maxWeeks = Math.max(...data.map(item => item.units.length));
-    const weekHeaders = Array.from({ length: maxWeeks }, (_, i) => `Week ${i + 1}`);
+    // Get current week number
+    const currentDate = new Date();
+    const startOfYear = new Date(currentDate.getFullYear(), 0, 1);
+    const currentWeek = Math.ceil((((currentDate - startOfYear) / 86400000) + startOfYear.getDay() + 1) / 7);
+
+    // Generate headers with correct week numbers
+    const weekHeaders = Array.from({ length: 41 }, (_, i) => {
+        const weekNum = ((currentWeek + i) <= 52) 
+            ? (currentWeek + i) 
+            : ((currentWeek + i) - 52);
+        return `Week ${weekNum}`;
+    });
     const headers = ['ASIN', ...weekHeaders];
 
     // Generate rows

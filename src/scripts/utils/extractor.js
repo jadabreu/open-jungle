@@ -70,13 +70,33 @@ window.ForecastDataExtractor = class ForecastDataExtractor {
     }
 
     async extractMeanForecastData() {
-        const { slope, intercept } = await this.initializeConversionParameters();
-        
         const path = document.querySelector('#line-Mean');
         if (!path?.getAttribute('d')) {
             throw new Error('Mean forecast line not found.');
         }
 
+        // Get Y-axis scale from the current graph view
+        const yAxisTicks = Array.from(document.querySelectorAll('.yAxis .tick'))
+            .map(tick => {
+                const transform = tick.getAttribute('transform');
+                const yMatch = transform.match(/translate\(0,([0-9.]+)\)/);
+                const y = yMatch ? parseFloat(yMatch[1]) : null;
+                
+                const text = tick.querySelector('text');
+                const value = text ? parseFloat(text.textContent.replace(/,/g, '')) : null;
+                
+                return (y !== null && value !== null) ? { y, value } : null;
+            })
+            .filter(tick => tick !== null);
+
+        if (yAxisTicks.length < 2) {
+            throw new Error('Unable to determine Y-axis scale');
+        }
+
+        // Sort by Y coordinate (top to bottom)
+        yAxisTicks.sort((a, b) => a.y - b.y);
+
+        // Extract points from the path
         const points = path.getAttribute('d')
             .split(/(?=[ML])/)
             .map(segment => {
@@ -85,10 +105,29 @@ window.ForecastDataExtractor = class ForecastDataExtractor {
             })
             .filter(point => !isNaN(point.y));
 
-        return points.map((point, index) => ({
-            week: index + 1,
-            units: this.convertYToUnits(point.y, slope, intercept)
-        }));
+        // Convert Y coordinates to actual units
+        return points.map((point, index) => {
+            // Find the two closest tick marks
+            let lowerTick = yAxisTicks[0];
+            let upperTick = yAxisTicks[yAxisTicks.length - 1];
+
+            for (let i = 0; i < yAxisTicks.length - 1; i++) {
+                if (yAxisTicks[i].y <= point.y && point.y <= yAxisTicks[i + 1].y) {
+                    lowerTick = yAxisTicks[i];
+                    upperTick = yAxisTicks[i + 1];
+                    break;
+                }
+            }
+
+            // Linear interpolation between the two closest tick marks
+            const percentage = (point.y - lowerTick.y) / (upperTick.y - lowerTick.y);
+            const value = lowerTick.value + percentage * (upperTick.value - lowerTick.value);
+
+            return {
+                week: index + 1,
+                units: Math.round(value)
+            };
+        });
     }
 
     async initializeConversionParameters() {

@@ -1,13 +1,13 @@
 # Chrome Web Store Listing
 
 ## Extension Name
-Capy Tools
+Open Jungle
 
 ## Summary (up to 132 characters)
 Automate Amazon seller tasks - Extract forecast data quickly and efficiently. Save time with one-click data extraction.
 
 ## Description
-Capy Tools is a powerful Chrome extension designed for Amazon sellers to streamline their workflow and save valuable time.
+Open Jungle is a powerful Chrome extension designed for Amazon sellers to streamline their workflow and save valuable time.
 
 Key Features:
 • One-click forecast data extraction
@@ -24,7 +24,7 @@ Perfect for:
 
 How it works:
 1. Navigate to your Amazon Restock Inventory Recommendations page
-2. Click the Capy Tools icon
+2. Click the Open Jungle icon
 3. Select "Extract Data"
 4. Get your forecast data in CSV format instantly
 
