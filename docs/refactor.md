@@ -29,7 +29,17 @@ This document outlines opportunities to refactor the Open Jungle Chrome extensio
 ### 5. Enhance Build and Deployment Process
 
 - **Issue**: The `build.js` script performs manual file copying and exclusion, which might not scale well with project growth.
-- **Solution**: Adopt build tools like Webpack, Rollup, or Parcel to automate the build process, including bundling, minification, and asset management. This can improve build efficiency and handle complex dependencies more effectively.
+- **Solution**: **Adopt Webpack** to automate the build process, including bundling, transpiling, minification, and asset management. Webpack offers extensive configuration options and a robust ecosystem, making it well-suited for complex projects like Chrome extensions. It ensures compatibility across both Windows and Unix systems, facilitating a smoother development workflow.
+
+  **Implementation Steps**:
+  
+  1. Install Webpack and necessary dependencies.
+  2. Create a `webpack.config.js` with appropriate entry points and loaders.
+  3. Update `package.json` scripts to include build commands.
+  4. Modify the extension's manifest to use the bundled scripts.
+  5. Run the build process using `npm run build`.
+  
+  This transition will improve build efficiency, handle complex dependencies more effectively, and prepare the project for scalable growth.
 
 ### 6. Replace Magic Numbers with Configurable Constants
 
