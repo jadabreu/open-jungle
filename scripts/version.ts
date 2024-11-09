@@ -1,7 +1,7 @@
-const fs = require('fs-extra');
-const path = require('path');
+import fs from 'fs-extra';
+import path from 'path';
 
-async function updateVersion(newVersion) {
+async function updateVersion(newVersion: string): Promise<void> {
   try {
     // Update package.json
     const packagePath = path.join(__dirname, '../package.json');
@@ -15,9 +15,9 @@ async function updateVersion(newVersion) {
     manifestJson.version = newVersion;
     await fs.writeJson(manifestPath, manifestJson, { spaces: 2 });
 
-    console.log(`Version updated to ${newVersion} in both package.json and manifest.json`);
-  } catch (err) {
-    console.error('Error updating version:', err);
+    console.log(`Version updated to ${newVersion} in package.json and manifest.json`);
+  } catch (error) {
+    console.error('Error updating version:', (error as Error).message);
     process.exit(1);
   }
 }
@@ -29,4 +29,4 @@ if (!newVersion) {
   process.exit(1);
 }
 
-updateVersion(newVersion); 
+updateVersion(newVersion);

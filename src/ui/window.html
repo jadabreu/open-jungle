@@ -4,12 +4,20 @@
     <meta charset="UTF-8">
     <title>Open Jungle - Amazon Forecast Extractor</title>
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
-    <link rel="stylesheet" href="styles/common.css">
-    <link rel="stylesheet" href="styles/main.css">
+    <link rel="stylesheet" href="styles/window.css">
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            width: 100vw;
+            height: 100vh;
+            overflow: hidden;
+        }
+        /* Add any additional styles you need */
+    </style>
 </head>
 <body>
     <div class="window-container">
-        <!-- Add waves container before the header -->
         <div class="wave-container">
             <div class="wave"></div>
             <div class="wave"></div>
@@ -17,7 +25,6 @@
             <div class="surfing-capybara"></div>
         </div>
         
-        <!-- Header -->
         <nav class="nav-wrapper">
             <div class="header-content">
                 <div class="profile-section">
@@ -73,6 +80,7 @@
             <p>Open Source Amazon Tools 🌴</p>
         </footer>
     </div>
-    <script src="scripts/window.js"></script>
+    
+    <script src="window.bundle.js"></script>
 </body>
 </html> 

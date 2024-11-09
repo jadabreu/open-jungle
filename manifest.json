@@ -4,12 +4,11 @@
   "version": "1.1.0",
   "description": "Extract forecast data from Amazon Seller Central",
   "permissions": [
+    "tabs",
     "activeTab",
     "scripting",
-    "downloads",
-    "tabs",
     "storage",
-    "windows"
+    "downloads"
   ],
   "host_permissions": [
     "https://sellercentral.amazon.com/*",
@@ -17,26 +16,19 @@
     "https://sellercentral-japan.amazon.com/*"
   ],
   "background": {
-    "service_worker": "background.bundle.js"
+    "service_worker": "src/background/background.js"
   },
   "content_scripts": [
     {
-      "matches": [
-        "https://sellercentral.amazon.com/*",
-        "https://sellercentral-europe.amazon.com/*",
-        "https://sellercentral-japan.amazon.com/*"
-      ],
-      "js": [
-        "content.bundle.js"
-      ],
+      "matches": ["<all_urls>"],
+      "js": ["src/content/content.js"],
       "run_at": "document_start"
     }
   ],
   "web_accessible_resources": [
     {
       "resources": [
-        "helpers.bundle.js",
-        "content.bundle.js"
+        "helpers.bundle.js"
       ],
       "matches": [
         "https://sellercentral.amazon.com/*",
@@ -57,4 +49,4 @@
     "48": "assets/icon48.png",
     "128": "assets/icon128.png"
   }
-}
+} 

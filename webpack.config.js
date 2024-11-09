@@ -1,33 +1,71 @@
 const path = require('path');
+const CopyWebpackPlugin = require('copy-webpack-plugin');
+const MiniCssExtractPlugin = require('mini-css-extract-plugin');
 
-module.exports = {
+/** @type {import('webpack').Configuration} */
+const config = {
   mode: 'production',
   entry: {
-    background: './src/scripts/background.js',
-    content: './src/scripts/content.js',
-    // Add other entry points as needed
+    content: './src/content/content.ts',
+    background: './src/background/background.ts',
+    window: './src/ui/window.ts',
+    helpers: './src/utils/helpers.ts'
   },
   output: {
     path: path.resolve(__dirname, 'dist'),
     filename: '[name].bundle.js',
+    clean: true,
+    environment: {
+      arrowFunction: true,
+      const: true,
+      destructuring: true,
+      module: true
+    }
+  },
+  resolve: {
+    extensions: ['.ts', '.js', '.css']
   },
   module: {
     rules: [
       {
-        test: /\.js$/,
-        exclude: /node_modules/,
-        use: {
-          loader: 'babel-loader',
-          options: {
-            presets: ['@babel/preset-env'],
-          },
-        },
+        test: /\.ts$/,
+        use: [
+          {
+            loader: 'ts-loader',
+            options: {
+              compilerOptions: {
+                module: 'ES2015'
+              }
+            }
+          }
+        ],
+        exclude: /node_modules/
       },
-      // Add loaders for other file types (e.g., CSS, images) as needed
-    ],
+      {
+        test: /\.css$/,
+        use: [
+          MiniCssExtractPlugin.loader,
+          'css-loader'
+        ]
+      }
+    ]
   },
-  resolve: {
-    extensions: ['.js'],
+  plugins: [
+    new MiniCssExtractPlugin({
+      filename: 'styles/[name].css'
+    }),
+    new CopyWebpackPlugin({
+      patterns: [
+        { from: 'src/assets', to: 'assets' },
+        { from: 'src/manifest.json', to: 'manifest.json' },
+        { from: 'src/ui/window.html', to: 'window.html' }
+      ]
+    })
+  ],
+  optimization: {
+    splitChunks: false
   },
-  // Add plugins and other configurations as needed
-}; 
+  devtool: 'source-map'
+};
+
+module.exports = config; 

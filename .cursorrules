@@ -1,0 +1,14 @@
+# LLM Guidelines for Code Modification
+
+- **Follow Naming Conventions:** Use `camelCase` for variables/functions, `PascalCase` for classes/components, and `UPPER_SNAKE_CASE` for constantss.
+- **Use TypeScript:** Ensure type annotations for variables, parameters, and return types.
+- **Adhere to Code Style:** Maintain 2-space indentation, limit lines to 100 characters, omit semicolons, and use single quotes for strings.
+- **Apply Best Practices:** Enforce Single Responsibility and DRY principles. Implement centralized script injection and error handling.
+- **Manage Event Listeners Efficiently:** Consolidate listeners and utilize event delegation where appropriate.
+- **Automate Build Process:** Use Webpack for bundling, transpiling, and asset management.
+- **Replace Magic Numbers:** Define constants in configuration files or environment variables.
+- **Structure CSS Properly:** Use BEM methodology and consider SCSS for better organization.
+- **Integrate Automated Testing:** Use Jest with at least 80% coverage for unit and integration tests.
+- **Leverage Modern JavaScript:** Utilize ES6+ features and prefer immutable data structures.
+- **Maintain Documentation:** Ensure comprehensive inline comments and up-to-date documentation using JSDoc.
+- **Ensure Code Quality:** All changes must pass linting and existing tests.

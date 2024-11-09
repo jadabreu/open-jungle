@@ -6,7 +6,7 @@ This document outlines opportunities to refactor the Open Jungle Chrome extensio
 
 ## Refactoring Opportunities
 
-### 1. Consolidate Script Injection Logic
+### 1. Consolidate Script Injection Logic - IMPLEMENTED
 
 - **Issue**: The process of injecting content scripts appears in multiple files (`window.js`, `content.js`).
 - **Solution**: Create a centralized utility module responsible for script injection. This module can handle injecting necessary scripts into target tabs, reducing code duplication and ensuring consistency.
@@ -32,13 +32,13 @@ This document outlines opportunities to refactor the Open Jungle Chrome extensio
 - **Solution**: **Adopt Webpack** to automate the build process, including bundling, transpiling, minification, and asset management. Webpack offers extensive configuration options and a robust ecosystem, making it well-suited for complex projects like Chrome extensions. It ensures compatibility across both Windows and Unix systems, facilitating a smoother development workflow.
 
   **Implementation Steps**:
-  
+
   1. Install Webpack and necessary dependencies.
   2. Create a `webpack.config.js` with appropriate entry points and loaders.
   3. Update `package.json` scripts to include build commands.
   4. Modify the extension's manifest to use the bundled scripts.
   5. Run the build process using `npm run build`.
-  
+
   This transition will improve build efficiency, handle complex dependencies more effectively, and prepare the project for scalable growth.
 
 ### 6. Replace Magic Numbers with Configurable Constants
