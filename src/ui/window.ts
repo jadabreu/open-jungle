@@ -40,6 +40,7 @@ class WindowManager {
   processedCount: HTMLElement | null;
   totalCount: HTMLElement | null;
   errorContainer: HTMLElement | null;
+  errorMessage: HTMLElement | null;
   errorList: HTMLElement | null;
   reloadBtn: HTMLButtonElement | null;
 
@@ -66,6 +67,7 @@ class WindowManager {
     this.processedCount = document.getElementById('processedCount');
     this.totalCount = document.getElementById('totalCount');
     this.errorContainer = document.getElementById('errorContainer');
+    this.errorMessage = document.getElementById('errorMessage');
     this.errorList = document.getElementById('errorList');
     this.reloadBtn = document.getElementById('reloadBtn') as HTMLButtonElement | null;
 
@@ -307,7 +309,28 @@ class WindowManager {
 
   showErrors(messages: string[]): void {
     if (this.errorContainer) this.errorContainer.style.display = 'block';
-    if (this.errorList) this.errorList.textContent = messages.join('\n');
+    if (this.errorMessage) {
+      // Clear previous error message content
+      this.errorMessage.innerHTML = '';
+      
+      // Check if it's a forecast page error
+      if (messages.some(msg => msg.toLowerCase().includes('forecast page') || msg.toLowerCase().includes('seller central'))) {
+        this.errorMessage.innerHTML = `
+          <p>Please make sure you have the Amazon Seller Central Restock Inventory page open, click the link below and then hit the refresh button on the top:</p>
+          <a href="https://sellercentral.amazon.com/restockinventory/recommendations?ref=fbacentral_nav_fba" 
+             target="_blank" 
+             class="amazon-link">
+              <i class="material-icons">open_in_new</i>
+              Open Restock Inventory Page
+          </a>
+        `;
+      } else {
+        // For other types of errors, just display the messages
+        this.errorMessage.innerHTML = messages.map(msg => `<p>${msg}</p>`).join('');
+      }
+    }
+    // Clear the error list since we're using errorMessage now
+    if (this.errorList) this.errorList.textContent = '';
   }
 
   resetUI(): void {
