@@ -744,7 +744,8 @@ export class ForecastUIHandler {
         chrome.runtime.sendMessage({
           action: 'storeData',
           data: this.data,
-          failures: this.failures
+          failures: this.failures,
+          downloadNow: false
         }, (response) => {
           if (chrome.runtime.lastError) {
             console.error('Failed to send data to background script:', chrome.runtime.lastError)

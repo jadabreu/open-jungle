@@ -116,6 +116,8 @@ let state: BackgroundState = {
   isLoading: false
 }
 
+let storedForecastData: ForecastItem[] = [];
+
 class CsvGenerator {
   private headers: string[]
 
@@ -224,36 +226,59 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   }
   
   if (message.action === 'storeData') {
-    // Create CSV content immediately and respond
-    const csvGenerator = new CsvGenerator()
-    csvGenerator.generateCsv(message.data)
-      .then(csvContent => {
-        const timestamp = new Date().toISOString().replace(/[:.]/g, '-')
-        const filename = `forecast_data_${timestamp}.csv`
-        const csvBase64 = btoa(unescape(encodeURIComponent(csvContent)))
-        const dataUrl = 'data:text/csv;base64,' + csvBase64
-        
-        return chrome.downloads.download({
-          url: dataUrl,
-          filename: filename,
-          saveAs: false
-        })
-      })
-      .then(() => {
-        sendResponse({ success: true })
-      })
-      .catch(error => {
-        console.error('CSV generation/download error:', error)
-        sendResponse({ success: false, error: error instanceof Error ? error.message : String(error) })
-      })
-      
-    // Return true synchronously
-    return true
+    try {
+      storedForecastData = message.data;
+      console.log('Forecast data stored:', storedForecastData.length, 'items');
+      if (message.downloadNow) {
+        downloadForecastCSV();
+      }
+      sendResponse({ success: true });
+    } catch (error) {
+      console.error('Error storing data:', error);
+      sendResponse({ error: 'Failed to store data' });
+    }
+    return true;
+  }
+  
+  if (message.action === 'downloadForecast') {
+    try {
+      if (storedForecastData.length === 0) {
+        sendResponse({ error: 'No forecast data available' });
+        return true;
+      }
+      downloadForecastCSV();
+      sendResponse({ success: true });
+    } catch (error) {
+      console.error('Error downloading forecast:', error);
+      sendResponse({ error: 'Failed to download forecast' });
+    }
+    return true;
   }
   
   // For other messages, respond synchronously
   return false
 })
+
+async function downloadForecastCSV() {
+  try {
+    const csvGenerator = new CsvGenerator();
+    const csvContent = await csvGenerator.generateCsv(storedForecastData);
+    
+    // Convert CSV content to base64
+    const csvBase64 = btoa(unescape(encodeURIComponent(csvContent)));
+    const dataUrl = 'data:text/csv;base64,' + csvBase64;
+    const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+    
+    await chrome.downloads.download({
+      url: dataUrl,
+      filename: `forecast_data_${timestamp}.csv`,
+      saveAs: true
+    });
+  } catch (error) {
+    console.error('Error generating/downloading CSV:', error);
+    throw error;
+  }
+}
 
 // Listen for tab updates to reset state
 chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {

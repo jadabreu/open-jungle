@@ -725,4 +725,57 @@ body {
     cursor: default;
     padding: 0.5rem 0;
 }
+
+.action-buttons {
+  display: flex;
+  gap: 1rem;
+  margin-top: 1rem;
+  justify-content: center;
+}
+
+.action-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+  border-radius: 6px;
+  border: none;
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  background-color: #f3f4f6;
+  color: #374151;
+}
+
+.action-btn:hover {
+  background-color: #e5e7eb;
+}
+
+.action-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.action-btn .material-icons {
+  font-size: 1.125rem;
+}
+
+#downloadBtn {
+  background-color: #047857;
+  color: white;
+}
+
+#downloadBtn:hover {
+  background-color: #065f46;
+}
+
+#calculateBtn {
+  background-color: #4f46e5;
+  color: white;
+}
+
+#calculateBtn:hover {
+  background-color: #4338ca;
+}
   

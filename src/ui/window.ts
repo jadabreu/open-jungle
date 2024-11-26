@@ -31,18 +31,27 @@ interface ForecastButton {
   asin: string
 }
 
+// Add with other interfaces at the top
+interface DownloadResponse {
+  error?: string;
+}
+
 class WindowManager {
-  extractBtn: HTMLButtonElement | null;
-  statusBadge: HTMLElement | null;
-  progressContainer: HTMLElement | null;
-  progressBar: HTMLElement | null;
-  currentAsin: HTMLElement | null;
-  processedCount: HTMLElement | null;
-  totalCount: HTMLElement | null;
-  errorContainer: HTMLElement | null;
-  errorMessage: HTMLElement | null;
-  errorList: HTMLElement | null;
-  reloadBtn: HTMLButtonElement | null;
+  private extractBtn: HTMLButtonElement | null;
+  private reloadBtn: HTMLButtonElement | null;
+  private statusBadge: HTMLElement | null;
+  private progressContainer: HTMLElement | null;
+  private progressBar: HTMLElement | null;
+  private currentAsin: HTMLElement | null;
+  private processedCount: HTMLElement | null;
+  private totalCount: HTMLElement | null;
+  private errorContainer: HTMLElement | null;
+  private errorMessage: HTMLElement | null;
+  private errorList: HTMLElement | null;
+  private actionButtons: HTMLElement | null;
+  private downloadBtn: HTMLButtonElement | null;
+  private calculateBtn: HTMLButtonElement | null;
+  private amazonTabIds: number[];
 
   currentView: 'main' | 'settings';
   mainContent: HTMLElement | null;
@@ -51,8 +60,6 @@ class WindowManager {
   settings: Settings = {
     forecastStart: 'week1' // Default value
   };
-
-  amazonTabIds: number[] = [];
 
   menuButton!: HTMLButtonElement;
   menuDropdown!: HTMLDivElement;
@@ -70,6 +77,10 @@ class WindowManager {
     this.errorMessage = document.getElementById('errorMessage');
     this.errorList = document.getElementById('errorList');
     this.reloadBtn = document.getElementById('reloadBtn') as HTMLButtonElement | null;
+    this.actionButtons = document.getElementById('actionButtons');
+    this.downloadBtn = document.getElementById('downloadBtn') as HTMLButtonElement;
+    this.calculateBtn = document.getElementById('calculateBtn') as HTMLButtonElement;
+    this.amazonTabIds = [];
 
     this.initializeEventListeners();
     setTimeout(() => this.validateCurrentPage(), 1000);
@@ -83,7 +94,7 @@ class WindowManager {
     this.initializeSettings();
   }
 
-  initializeEventListeners(): void {
+  private initializeEventListeners(): void {
     this.extractBtn?.addEventListener('click', () => {
       console.log('Extract button clicked');
       this.startExtraction();
@@ -117,6 +128,13 @@ class WindowManager {
                 break;
         }
     });
+
+    if (this.downloadBtn) {
+      this.downloadBtn.addEventListener('click', () => this.handleDownload());
+    }
+    if (this.calculateBtn) {
+      this.calculateBtn.addEventListener('click', () => this.handleCalculateBuffers());
+    }
   }
 
   async validateCurrentPage(): Promise<boolean> {
@@ -281,6 +299,12 @@ class WindowManager {
     this.setStatus('Complete', 'success');
     if (this.extractBtn) this.extractBtn.disabled = false;
     if (this.reloadBtn) this.reloadBtn.disabled = false;
+    
+    // Show action buttons
+    if (this.actionButtons) {
+      this.actionButtons.style.display = 'flex';
+    }
+    
     console.log(`Extraction complete: ${data.successCount} succeeded, ${data.failedAsins.length} failed`);
 
     if (data.failedAsins?.length > 0) {
@@ -341,6 +365,7 @@ class WindowManager {
     if (this.processedCount) this.processedCount.textContent = '0';
     if (this.totalCount) this.totalCount.textContent = '0';
     if (this.reloadBtn) this.reloadBtn.disabled = false;
+    if (this.actionButtons) this.actionButtons.style.display = 'none';
   }
 
   initializeMenu(): void {
@@ -551,6 +576,24 @@ class WindowManager {
       if (this.menuButton) this.menuButton.disabled = false;
       this.menuItems.forEach(item => item.disabled = false);
     }
+  }
+
+  private async handleDownload(): Promise<void> {
+    try {
+      const response = await new Promise<DownloadResponse>((resolve) => {
+        chrome.runtime.sendMessage({ action: 'downloadForecast' }, (response) => resolve(response));
+      });
+      if (response?.error) {
+        this.handleError(response.error);
+      }
+    } catch (error) {
+      this.handleError(`Failed to download forecast: ${error instanceof Error ? error.message : String(error)}`);
+    }
+  }
+
+  private handleCalculateBuffers(): void {
+    // Placeholder for future implementation
+    console.log('Calculate Buffers functionality will be implemented later');
   }
 }
 
