@@ -72,8 +72,10 @@ export class ForecastDataExtractor {
         throw new Error('Mean forecast line not found.');
       }
 
-      // Wait additional time for the graph to fully render
-      await sleep(500);
+      // Get other forecast lines
+      const lastYearPath = document.querySelector('#line-Lastyear');
+      const pessimisticPath = document.querySelector('#line-Pessimistic');
+      const optimisticPath = document.querySelector('#line-Optimistic');
 
       // Get Y-axis scale from the current graph view
       const yAxisTicks = Array.from(document.querySelectorAll('.yAxis .tick'))
@@ -96,76 +98,106 @@ export class ForecastDataExtractor {
       // Sort by Y coordinate (top to bottom)
       yAxisTicks.sort((a, b) => a.y - b.y);
 
-      // Extract points from the path
-      const pathData = path.getAttribute('d');
-      if (!pathData) {
-        throw new Error('Path data not found');
-      }
-
-      const points = pathData
-        .split(/(?=[ML])/)
-        .map(segment => {
-          const [x, y] = segment.slice(1).trim().split(',').map(Number);
-          return { x, y };
-        })
-        .filter(point => !isNaN(point.y));
-
-      // Convert Y coordinates to actual units with proper week ordering
-      const currentWeek = this.getCurrentWeekNumber();
-      const currentYear = new Date().getFullYear();
-      
-      // First get all the forecast points with their values
-      const forecasts = points.map((point, index) => {
-        // Find the two closest tick marks
-        let lowerTick = yAxisTicks[0];
-        let upperTick = yAxisTicks[yAxisTicks.length - 1];
-
-        for (let i = 0; i < yAxisTicks.length - 1; i++) {
-          if (yAxisTicks[i].y <= point.y && point.y <= yAxisTicks[i + 1].y) {
-            lowerTick = yAxisTicks[i];
-            upperTick = yAxisTicks[i + 1];
-            break;
-          }
-        }
-
-        // Linear interpolation between the two closest tick marks
-        const percentage = (point.y - lowerTick.y) / (upperTick.y - lowerTick.y);
-        const value = lowerTick.value + percentage * (upperTick.value - lowerTick.value);
-
-        // Calculate actual calendar week and year
-        let weekNumber = currentWeek + index;
-        let year = currentYear;
+      // Helper function to extract points from a path
+      const extractPointsFromPath = (pathElement: Element | null): { x: number, y: number }[] => {
+        if (!pathElement) return [];
         
-        if (weekNumber > 52) {
-          weekNumber = weekNumber - 52;
-          year++;
-        }
+        const pathData = pathElement.getAttribute('d');
+        if (!pathData) return [];
 
-        return {
-          week: weekNumber,
-          year,
-          units: Math.round(value),
-          index // Store original sequence
-        };
-      });
+        return pathData
+          .split(/(?=[ML])/)
+          .map(segment => {
+            const [x, y] = segment.slice(1).trim().split(',').map(Number);
+            return { x, y };
+          })
+          .filter(point => !isNaN(point.y));
+      };
+
+      // Helper function to convert points to forecast data
+      const convertPointsToForecasts = (points: { x: number, y: number }[]): ForecastData[] => {
+        const currentWeek = this.getCurrentWeekNumber();
+        const currentYear = new Date().getFullYear();
+        
+        return points.map((point, index) => {
+          // Find the two closest tick marks
+          let lowerTick = yAxisTicks[0];
+          let upperTick = yAxisTicks[yAxisTicks.length - 1];
+
+          for (let i = 0; i < yAxisTicks.length - 1; i++) {
+            if (yAxisTicks[i].y <= point.y && point.y <= yAxisTicks[i + 1].y) {
+              lowerTick = yAxisTicks[i];
+              upperTick = yAxisTicks[i + 1];
+              break;
+            }
+          }
+
+          // Linear interpolation between the two closest tick marks
+          const percentage = (point.y - lowerTick.y) / (upperTick.y - lowerTick.y);
+          const value = lowerTick.value + percentage * (upperTick.value - lowerTick.value);
+
+          // Calculate actual calendar week and year
+          let weekNumber = currentWeek + index;
+          let year = currentYear;
+          
+          if (weekNumber > 52) {
+            weekNumber = weekNumber - 52;
+            year++;
+          }
+
+          return {
+            week: weekNumber,
+            year,
+            units: Math.round(value),
+            type: 'mean' // Default type
+          };
+        });
+      };
+
+      // Extract points from all paths
+      const meanPoints = extractPointsFromPath(path);
+      const lastYearPoints = extractPointsFromPath(lastYearPath);
+      const pessimisticPoints = extractPointsFromPath(pessimisticPath);
+      const optimisticPoints = extractPointsFromPath(optimisticPath);
+
+      // Convert all points to forecast data
+      const meanForecasts = convertPointsToForecasts(meanPoints).map(f => ({ ...f, type: 'mean' as const }));
+      const lastYearForecasts = convertPointsToForecasts(lastYearPoints).map(f => ({ ...f, type: 'lastYear' as const }));
+      const pessimisticForecasts = convertPointsToForecasts(pessimisticPoints).map(f => ({ ...f, type: 'pessimistic' as const }));
+      const optimisticForecasts = convertPointsToForecasts(optimisticPoints).map(f => ({ ...f, type: 'optimistic' as const }));
+
+      // Combine all forecasts
+      const allForecasts = [
+        ...meanForecasts,
+        ...lastYearForecasts,
+        ...pessimisticForecasts,
+        ...optimisticForecasts
+      ];
 
       // For currentWeek mode, we need to reorder the data to start from current week
       if (forecastStart === 'currentWeek') {
         // Find the index of current week
-        const currentWeekIndex = forecasts.findIndex(f => f.week === currentWeek && f.year === currentYear);
+        const currentWeek = this.getCurrentWeekNumber();
+        const currentYear = new Date().getFullYear();
+        
+        const currentWeekIndex = allForecasts.findIndex(f => 
+          f.week === currentWeek && 
+          f.year === currentYear && 
+          f.type === 'mean'
+        );
         
         if (currentWeekIndex !== -1) {
           // Reorder array to start from current week
           const reordered = [
-            ...forecasts.slice(currentWeekIndex),
-            ...forecasts.slice(0, currentWeekIndex)
+            ...allForecasts.slice(currentWeekIndex),
+            ...allForecasts.slice(0, currentWeekIndex)
           ];
-          return reordered.map(({ index, ...rest }) => rest);
+          return reordered;
         }
       }
       
       // For week1 mode or if reordering failed, return as is
-      return forecasts.map(({ index, ...rest }) => rest);
+      return allForecasts;
 
     } catch (error: unknown) {
       console.error(`Error fetching forecasts for ASIN ${asin}:`, error);
@@ -608,7 +640,8 @@ export class ForecastUIHandler {
         forecasts: meanData.map(point => ({
           week: point.week,
           year: point.year,
-          units: point.units
+          units: point.units,
+          type: point.type
         }))
       });
 

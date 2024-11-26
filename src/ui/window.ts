@@ -107,6 +107,13 @@ class WindowManager {
       this.validateCurrentPage();
     });
 
+    if (this.downloadBtn) {
+      this.downloadBtn.addEventListener('click', () => this.handleDownload());
+    }
+    if (this.calculateBtn) {
+      this.calculateBtn.addEventListener('click', () => this.handleCalculateBuffers());
+    }
+
     chrome.runtime.onMessage.addListener((
         message: Message, 
         sender: chrome.runtime.MessageSender, 
@@ -128,13 +135,6 @@ class WindowManager {
                 break;
         }
     });
-
-    if (this.downloadBtn) {
-      this.downloadBtn.addEventListener('click', () => this.handleDownload());
-    }
-    if (this.calculateBtn) {
-      this.calculateBtn.addEventListener('click', () => this.handleCalculateBuffers());
-    }
   }
 
   async validateCurrentPage(): Promise<boolean> {
@@ -591,9 +591,17 @@ class WindowManager {
     }
   }
 
-  private handleCalculateBuffers(): void {
-    // Placeholder for future implementation
-    console.log('Calculate Buffers functionality will be implemented later');
+  private async handleCalculateBuffers(): Promise<void> {
+    try {
+      const response = await new Promise<DownloadResponse>((resolve) => {
+        chrome.runtime.sendMessage({ action: 'downloadBuffer' }, (response) => resolve(response));
+      });
+      if (response?.error) {
+        this.handleError(response.error);
+      }
+    } catch (error) {
+      this.handleError(`Failed to calculate buffers: ${error instanceof Error ? error.message : String(error)}`);
+    }
   }
 }
 

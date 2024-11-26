@@ -1,9 +1,12 @@
 export type WeekStartOption = 'week1' | 'currentWeek'
 
+export type ForecastType = 'mean' | 'lastYear' | 'pessimistic' | 'optimistic'
+
 export interface ForecastData {
   week: number
   year: number
   units: number
+  type: ForecastType
 }
 
 export interface ForecastItem {
