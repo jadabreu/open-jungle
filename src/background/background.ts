@@ -119,6 +119,13 @@ let state: BackgroundState = {
 class CsvGenerator {
   private headers: string[]
 
+  private getWeekNumber(): number {
+    const now = new Date()
+    const oneJan = new Date(now.getFullYear(), 0, 1)
+    const week = Math.ceil((((now.getTime() - oneJan.getTime()) / 86400000) + oneJan.getDay() + 1) / 7)
+    return week
+  }
+
   constructor() {
     this.headers = ['ASIN']
   }
@@ -166,7 +173,7 @@ class CsvGenerator {
     
     for (const item of data) {
       if (!item.forecasts || !Array.isArray(item.forecasts)) {
-        console.error('Invalid forecast data for ASIN:', item.asin)
+        console.error('Invalid forecast data for ASIN:', item.asin, 'Data:', item)
         continue
       }
 
@@ -184,10 +191,10 @@ class CsvGenerator {
           orderedForecasts[position] = forecast.units.toString()
         })
       } else {
-        // For currentWeek mode, data is already in sequential order
-        const startWeek = item.forecasts[0].week - 1 // Convert to 0-based index
+        // Updated "Current Week" mode positioning
+        const currentWeek = this.getWeekNumber()
         item.forecasts.forEach((forecast, index) => {
-          let position = (startWeek + index) % 52
+          let position = (forecast.week - currentWeek + 52) % 52
           orderedForecasts[position] = forecast.units.toString()
         })
       }

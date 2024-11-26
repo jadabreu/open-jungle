@@ -114,7 +114,8 @@ export class ForecastDataExtractor {
       const currentWeek = this.getCurrentWeekNumber();
       const currentYear = new Date().getFullYear();
       
-      return points.map((point, index) => {
+      // First get all the forecast points with their values
+      const forecasts = points.map((point, index) => {
         // Find the two closest tick marks
         let lowerTick = yAxisTicks[0];
         let upperTick = yAxisTicks[yAxisTicks.length - 1];
@@ -131,31 +132,40 @@ export class ForecastDataExtractor {
         const percentage = (point.y - lowerTick.y) / (upperTick.y - lowerTick.y);
         const value = lowerTick.value + percentage * (upperTick.value - lowerTick.value);
 
-        let weekNumber: number;
+        // Calculate actual calendar week and year
+        let weekNumber = currentWeek + index;
         let year = currentYear;
-
-        if (forecastStart === 'week1') {
-          // Keep the actual week numbers from Amazon's data
-          weekNumber = currentWeek + index;
-          if (weekNumber > 52) {
-            weekNumber = weekNumber - 52;
-            year++;
-          }
-        } else {
-          // Same as before for currentWeek mode
-          weekNumber = currentWeek + index;
-          if (weekNumber > 52) {
-            weekNumber = weekNumber - 52;
-            year++;
-          }
+        
+        if (weekNumber > 52) {
+          weekNumber = weekNumber - 52;
+          year++;
         }
 
         return {
           week: weekNumber,
           year,
-          units: Math.round(value)
+          units: Math.round(value),
+          index // Store original sequence
         };
       });
+
+      // For currentWeek mode, we need to reorder the data to start from current week
+      if (forecastStart === 'currentWeek') {
+        // Find the index of current week
+        const currentWeekIndex = forecasts.findIndex(f => f.week === currentWeek && f.year === currentYear);
+        
+        if (currentWeekIndex !== -1) {
+          // Reorder array to start from current week
+          const reordered = [
+            ...forecasts.slice(currentWeekIndex),
+            ...forecasts.slice(0, currentWeekIndex)
+          ];
+          return reordered.map(({ index, ...rest }) => rest);
+        }
+      }
+      
+      // For week1 mode or if reordering failed, return as is
+      return forecasts.map(({ index, ...rest }) => rest);
 
     } catch (error: unknown) {
       console.error(`Error fetching forecasts for ASIN ${asin}:`, error);
@@ -347,6 +357,21 @@ export class ForecastUIHandler {
     this.data = [];
     this.failures = [];
     this.headers = [];
+  }
+
+  private getCurrentWeekNumber(): number {
+    const weekLabel = document.querySelector('.forecast-week-label');
+    if (weekLabel) {
+      const match = weekLabel.textContent?.match(/Week (\d+)/);
+      if (match) {
+        return parseInt(match[1], 10);
+      }
+    }
+    
+    const now = new Date();
+    const start = new Date(now.getFullYear(), 0, 1);
+    const week = Math.ceil(((now.getTime() - start.getTime()) / 86400000 + start.getDay() + 1) / 7);
+    return week;
   }
 
   /**
@@ -616,15 +641,25 @@ export class ForecastUIHandler {
         throw new Error('No data available to generate CSV.');
       }
 
-      const firstItem = data[0];
-      const startWeek = firstItem.forecasts[0].week;
+      // Generate headers
       this.headers = ['ASIN'];
-      let week = startWeek;
-      for (let i = 0; i < 52; i++) {
-        this.headers.push(`Week ${week}`);
-        week = week === 52 ? 1 : week + 1;
+      const currentWeek = this.getCurrentWeekNumber();
+      
+      if (forecastStart === 'week1') {
+        // Week 1 mode: Week 1 to Week 52
+        for (let week = 1; week <= 52; week++) {
+          this.headers.push(`Week ${week}`);
+        }
+      } else {
+        // Current Week mode: start from current week
+        let week = currentWeek;
+        for (let i = 0; i < 52; i++) {
+          this.headers.push(`Week ${week}`);
+          week = week === 52 ? 1 : week + 1;
+        }
       }
 
+      // Generate CSV content
       const csvContent = [
         this.headers.join(','),
         ...this.formatDataRows(data, forecastStart)
@@ -637,14 +672,9 @@ export class ForecastUIHandler {
     }
   }
 
-  /**
-   * Formats data rows for CSV.
-   * @param data - Array of ForecastItems.
-   * @param forecastStart - Starting week option.
-   * @returns Array of CSV formatted strings.
-   */
   private formatDataRows(data: ForecastItem[], forecastStart: WeekStartOption): string[] {
     const rows: string[] = [];
+    const currentWeek = this.getCurrentWeekNumber();
 
     for (const item of data) {
       if (!item.forecasts || !Array.isArray(item.forecasts)) {
@@ -656,19 +686,33 @@ export class ForecastUIHandler {
       const orderedForecasts = new Array(52).fill('');
 
       if (forecastStart === 'week1') {
+        // For Week 1 mode: place each forecast in its corresponding week slot
         item.forecasts.forEach(forecast => {
           if (forecast.week > 0 && forecast.week <= 52) {
             orderedForecasts[forecast.week - 1] = forecast.units.toString();
           }
         });
       } else {
+        // For Current Week mode: reorganize data to start from current week
+        const forecastMap = new Map<number, string>();
+        
+        // First, map each forecast to its week number
+        item.forecasts.forEach(forecast => {
+          forecastMap.set(forecast.week, forecast.units.toString());
+        });
+
+        // Then fill the orderedForecasts array starting from current week
+        let week = currentWeek;
         for (let i = 0; i < 52; i++) {
-          const forecast = item.forecasts[i];
-          orderedForecasts[i] = forecast ? forecast.units.toString() : '';
+          const value = forecastMap.get(week);
+          if (value) {
+            orderedForecasts[i] = value;
+          }
+          week = week === 52 ? 1 : week + 1;
         }
       }
 
-      row.push(...orderedForecasts.map(f => f || ''));
+      row.push(...orderedForecasts);
       rows.push(row.join(','));
     }
 

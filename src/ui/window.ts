@@ -200,7 +200,7 @@ class WindowManager {
         }
       }
 
-      throw new Error('No valid forecast page found. Please ensure you are on an Amazon Seller Central forecast page.');
+      throw new Error('Click the link above and then hit refresh button on the top.');
       
     } catch (error) {
       console.error('Page validation failed:', error);
