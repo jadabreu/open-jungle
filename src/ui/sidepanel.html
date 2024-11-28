@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Open Jungle - Amazon Forecast Extractor</title>
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <link rel="stylesheet" href="styles/styles.css">
+</head>
+<body>
+    <div class="window-container">
+        <nav class="nav-wrapper">
+            <div class="header-content">
+                <div class="profile-section">
+                    <div class="profile-image">
+                        <img src="assets/icon128.png" alt="Open Jungle" class="circle responsive-img">
+                    </div>
+                    <div class="title-section">
+                        <h1>Open Jungle</h1>
+                        <p>Amazon Forecast Extractor</p>
+                    </div>
+                </div>
+                <div class="status-wrapper">
+                    <span class="status-badge" id="statusBadge"><span>Ready</span></span>
+                    <div class="header-buttons">
+                        <button class="reload-btn" id="reloadBtn">
+                            <i class="material-icons">refresh</i>
+                        </button>
+                        <button class="menu-toggle" id="menuBtn">
+                            <i class="material-icons">menu</i>
+                        </button>
+                    </div>
+                    <div class="menu-dropdown" id="menuDropdown">
+                        <button class="menu-item" id="extractMenuItem">
+                            <i class="material-icons">cloud_download</i>
+                            <span>Extract Data</span>
+                        </button>
+                        <button class="menu-item" id="settingsMenuItem">
+                            <i class="material-icons">settings</i>
+                            <span>Settings</span>
+                        </button>
+                        <button class="menu-item" id="helpMenuItem">
+                            <i class="material-icons">help_outline</i>
+                            <span>Help</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </nav>
+
+        <div class="wave-container">
+            <div class="wave"></div>
+            <div class="wave"></div>
+            <div class="wave"></div>
+            <div class="surfing-capybara"></div>
+        </div>
+
+        <main class="main-content" id="mainContent">
+            <div class="row">
+                <button id="extractButton" class="extract-btn">
+                    <i class="material-icons">cloud_download</i>
+                    Extract Data
+                </button>
+
+                <div class="progress-container" id="progressContainer">
+                    <div class="progress-text">
+                        Processing: <span id="currentAsin">-</span>
+                    </div>
+                    <div class="progress-bar">
+                        <div class="progress" id="progress"></div>
+                    </div>
+                    <div class="action-buttons" id="actionButtons" style="display: none;">
+                        <button id="downloadButton" class="action-btn">
+                            <i class="material-icons">download</i>
+                            Download Forecast
+                        </button>
+                        <button id="calculateButton" class="action-btn">
+                            <i class="material-icons">calculate</i>
+                            Calculate Buffers
+                        </button>
+                    </div>
+                    <div class="progress-stats">
+                        <span id="processedCount">0</span> / <span id="totalCount">0</span> ASINs
+                    </div>
+                </div>
+
+                <div class="error-container" id="errorContainer">
+                    <div class="error-title">
+                        <i class="material-icons">error_outline</i>
+                        <span>Error Details</span>
+                    </div>
+                    <div class="error-message" id="errorMessage"></div>
+                    <div class="error-list" id="errorList"></div>
+                </div>
+            </div>
+        </main>
+
+        <div class="settings-content" id="settingsContent" style="display: none;">
+            <div class="settings-header">
+                <h2>Settings</h2>
+                <button class="back-button" id="backButton" aria-label="Back to main view">
+                    <i class="material-icons">arrow_back</i>
+                </button>
+            </div>
+            <div class="settings-body">
+                <div class="settings-section">
+                    <h3>Forecast Settings</h3>
+                    <div class="setting-item">
+                        <div class="radio-group">
+                            <div class="radio-option">
+                                <label class="radio-label">
+                                    <input type="radio" name="forecastStart" value="week1" id="week1Radio">
+                                    Start at Week 1 of the Year
+                                </label>
+                            </div>
+                            <div class="radio-option">
+                                <label class="radio-label">
+                                    <input type="radio" name="forecastStart" value="currentWeek" id="currentWeekRadio">
+                                    Start at Current Week
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <footer class="footer">
+            <p>🌴Open Source Tools for Amazon Sellers🌴</p>
+        </footer>
+    </div>
+    
+    <script src="sidepanel.bundle.js"></script>
+</body>
+</html> 

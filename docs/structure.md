@@ -14,17 +14,15 @@ open-jungle/
 │ │ ├── content.ts
 │ │ └── utils.ts # Utility functions for content scripts
 │ ├── ui/ # UI and related scripts
-│ │ ├── window.html
-│ │ ├── window.ts
-│ │ └── styles.css
+│ │ ├── sidepanel.html
+│ │ └── sidepanel.ts
 │ ├── options/ # Options page and related scripts
 │ │ ├── options.html
 │ │ ├── options.ts
 │ │ └── styles.css
 │ ├── components/ # Reusable UI components (if applicable)
 │ ├── styles/ # Shared CSS or preprocessor files
-│ │ ├── main.css
-│ │ └── common.css
+│ │ └── sidepanel.css
 │ ├── utils/ # General utility functions
 │ │ ├── helpers.ts
 │ │ └── extractor.ts

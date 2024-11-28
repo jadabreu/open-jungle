@@ -1,114 +1,18 @@
 /// <reference types="chrome" />
 
-import { BackgroundState, ForecastData, ForecastItem, WeekStartOption, Settings, ForecastType } from '../types/index.js'
-
-declare namespace chrome {
-  export namespace runtime {
-    interface Port {
-      name: string
-      onMessage: chrome.events.Event<(message: any) => void>
-      onDisconnect: chrome.events.Event<() => void>
-      postMessage: (message: any) => void
-      disconnect: () => void
+declare global {
+  namespace chrome {
+    export interface SidePanel {
+      setPanelBehavior(behavior: { openPanelOnActionClick: boolean }): Promise<void>;
+      open(options: { tabId: number }): Promise<void>;
     }
-    
-    function getURL(path: string): string
-    const onMessage: chrome.events.Event<
-      (message: any, sender: any, sendResponse: (response?: any) => void) => void
-    >
-    const onConnect: chrome.events.Event<(port: Port) => void>
-    const lastError: chrome.runtime.LastError | undefined
-    interface LastError {
-      message: string
-    }
-    function sendMessage(message: any, callback?: (response?: any) => void): void
-  }
-
-  export namespace downloads {
-    function download(options: {
-      url: string
-      filename: string
-      saveAs?: boolean
-    }): Promise<number>
-  }
-
-  export namespace tabs {
-    interface Tab {
-      id?: number
-      url?: string
-    }
-    const onUpdated: chrome.events.Event<
-      (tabId: number, changeInfo: { status?: string }, tab: Tab) => void
-    >
-    function query(queryInfo: { active: boolean; currentWindow: boolean }): Promise<Tab[]>
-    function sendMessage(tabId: number, message: any, callback?: (response: any) => void): void
-  }
-
-  export namespace action {
-    const onClicked: chrome.events.Event<(tab: chrome.tabs.Tab) => void>
-  }
-
-  export namespace storage {
-    interface StorageChange {
-      newValue?: any
-      oldValue?: any
-    }
-
-    interface StorageArea {
-      get<T = any>(keys?: string | string[] | { [key: string]: T }): Promise<{ [key: string]: T }>
-      set(items: object): Promise<void>
-    }
-
-    interface SyncStorageArea extends StorageArea {
-      // Add specific sync storage methods if needed
-    }
-
-    const sync: SyncStorageArea
-    const local: StorageArea
-    const managed: StorageArea
-
-    const onChanged: chrome.events.Event<
-      (changes: { [key: string]: StorageChange }, areaName: string) => void
-    >
-  }
-
-  export namespace windows {
-    interface Window {
-      id?: number
-      type?: string
-      url?: string
-    }
-
-    interface CreateData {
-      url?: string | string[]
-      type?: 'normal' | 'popup' | 'panel'
-      width?: number
-      height?: number
-      left?: number
-      top?: number
-      focused?: boolean
-      state?: 'normal' | 'minimized' | 'maximized' | 'fullscreen'
-    }
-
-    function create(createData: CreateData): Promise<Window>
-    function getAll(getInfo?: { populate?: boolean }): Promise<Window[]>
-    function remove(windowId: number): Promise<void>
-    function get(windowId: number): Promise<Window>
-    function update(windowId: number, updateInfo: { focused?: boolean }): Promise<Window>
-    const onRemoved: chrome.events.Event<(windowId: number) => void>
-  }
-
-  export namespace events {
-    interface Event<T extends Function> {
-      addListener(callback: T): void
-      removeListener(callback: T): void
-      hasListener(callback: T): boolean
-    }
+    export const sidePanel: SidePanel;
   }
 }
 
-console.log('Background service worker initialized');
+import { BackgroundState, ForecastData, ForecastItem, WeekStartOption, Settings, ForecastType } from '../types/index.js'
 
+// Initialize state
 let state: BackgroundState = {
   extractedData: null,
   failedAsins: [],
@@ -118,6 +22,94 @@ let state: BackgroundState = {
 
 let storedForecastData: ForecastItem[] = [];
 
+// Initialize side panel behavior when extension is installed
+chrome.runtime.onInstalled.addListener(() => {
+  chrome.sidePanel.setPanelBehavior({ openPanelOnActionClick: true });
+});
+
+// Handle extension icon click
+chrome.action.onClicked.addListener((tab) => {
+  if (tab.id) {
+    chrome.sidePanel.open({ tabId: tab.id });
+  }
+});
+
+// Listen for tab updates to reset state
+chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
+  if (changeInfo.status === 'loading') {
+    state = {
+      extractedData: null,
+      failedAsins: [],
+      isExtracting: false,
+      isLoading: false
+    }
+    console.log('Background state reset due to tab loading:', tabId)
+  }
+});
+
+// Handle messages from content script
+chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+  if (message.type === 'SET_LOADING') {
+    state.isLoading = message.loading;
+    // Broadcast loading state change
+    chrome.runtime.sendMessage({ 
+      type: 'LOADING_STATE_CHANGED', 
+      loading: message.loading 
+    });
+    sendResponse({ success: true });
+    return false;
+  }
+  
+  if (message.action === 'storeData') {
+    try {
+      storedForecastData = message.data;
+      console.log('Forecast data stored:', storedForecastData.length, 'items');
+      if (message.downloadNow) {
+        downloadForecastCSV();
+      }
+      sendResponse({ success: true });
+    } catch (error) {
+      console.error('Error storing data:', error);
+      sendResponse({ error: 'Failed to store data' });
+    }
+    return true;
+  }
+  
+  if (message.action === 'downloadForecast') {
+    try {
+      if (storedForecastData.length === 0) {
+        sendResponse({ error: 'No forecast data available' });
+        return true;
+      }
+      downloadForecastCSV();
+      sendResponse({ success: true });
+    } catch (error) {
+      console.error('Error downloading forecast:', error);
+      sendResponse({ error: 'Failed to download forecast' });
+    }
+    return true;
+  }
+  
+  if (message.action === 'downloadBuffer') {
+    try {
+      if (storedForecastData.length === 0) {
+        sendResponse({ error: 'No forecast data available' });
+        return true;
+      }
+      downloadBufferCSV();
+      sendResponse({ success: true });
+    } catch (error) {
+      console.error('Error downloading buffer data:', error);
+      sendResponse({ error: 'Failed to download buffer data' });
+    }
+    return true;
+  }
+  
+  // For other messages, respond synchronously
+  return false;
+});
+
+// CSV Generation and Download Functions
 class CsvGenerator {
   protected headers: string[]
 
@@ -134,7 +126,10 @@ class CsvGenerator {
 
   public async generateCsv(data: ForecastItem[]): Promise<string> {
     try {
-      const { forecastStart } = await chrome.storage.sync.get({ forecastStart: 'currentWeek' }) as { forecastStart: WeekStartOption }
+      const result = await new Promise<{ forecastStart?: WeekStartOption }>((resolve) => {
+        chrome.storage.sync.get('forecastStart', resolve);
+      });
+      const forecastStart = result.forecastStart || 'currentWeek';
       console.log('Generating CSV with data:', data, 'forecastStart:', forecastStart)
       
       const firstItem = data[0]
@@ -216,7 +211,10 @@ class CsvGenerator {
 class BufferCsvGenerator extends CsvGenerator {
   public async generateCsv(data: ForecastItem[]): Promise<string> {
     try {
-      const { forecastStart } = await chrome.storage.sync.get({ forecastStart: 'currentWeek' }) as { forecastStart: WeekStartOption }
+      const result = await new Promise<{ forecastStart?: WeekStartOption }>((resolve) => {
+        chrome.storage.sync.get('forecastStart', resolve);
+      });
+      const forecastStart = result.forecastStart || 'currentWeek';
       console.log('Generating Buffer CSV with data:', data, 'forecastStart:', forecastStart)
       
       const firstItem = data[0]
@@ -365,71 +363,6 @@ async function downloadBufferCSV() {
   }
 }
 
-// Add window tracking
-let popupWindowId: number | null = null;
-
-// Handle messages from content script
-chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
-  if (message.type === 'SET_LOADING') {
-    state.isLoading = message.loading;
-    // Use the broadcast function
-    broadcastToPopup({ 
-      type: 'LOADING_STATE_CHANGED', 
-      loading: message.loading 
-    });
-    sendResponse({ success: true });
-    return false;
-  }
-  
-  if (message.action === 'storeData') {
-    try {
-      storedForecastData = message.data;
-      console.log('Forecast data stored:', storedForecastData.length, 'items');
-      if (message.downloadNow) {
-        downloadForecastCSV();
-      }
-      sendResponse({ success: true });
-    } catch (error) {
-      console.error('Error storing data:', error);
-      sendResponse({ error: 'Failed to store data' });
-    }
-    return true;
-  }
-  
-  if (message.action === 'downloadForecast') {
-    try {
-      if (storedForecastData.length === 0) {
-        sendResponse({ error: 'No forecast data available' });
-        return true;
-      }
-      downloadForecastCSV();
-      sendResponse({ success: true });
-    } catch (error) {
-      console.error('Error downloading forecast:', error);
-      sendResponse({ error: 'Failed to download forecast' });
-    }
-    return true;
-  }
-  
-  if (message.action === 'downloadBuffer') {
-    try {
-      if (storedForecastData.length === 0) {
-        sendResponse({ error: 'No forecast data available' });
-        return true;
-      }
-      downloadBufferCSV();
-      sendResponse({ success: true });
-    } catch (error) {
-      console.error('Error downloading buffer data:', error);
-      sendResponse({ error: 'Failed to download buffer data' });
-    }
-    return true;
-  }
-  
-  // For other messages, respond synchronously
-  return false
-})
-
 async function downloadForecastCSV() {
   try {
     const csvGenerator = new CsvGenerator();
@@ -450,77 +383,3 @@ async function downloadForecastCSV() {
     throw error;
   }
 }
-
-// Listen for tab updates to reset state
-chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
-  if (changeInfo.status === 'loading') {
-    state = {
-      extractedData: null,
-      failedAsins: [],
-      isExtracting: false,
-      isLoading: false
-    }
-    console.log('Background state reset due to tab loading:', tabId)
-  }
-})
-
-// Handle extension icon click
-chrome.action.onClicked.addListener((tab) => {
-  console.log('Extension icon clicked, opening window.html')
-  chrome.windows.create({
-    url: chrome.runtime.getURL('window.html'),
-    type: 'popup',
-    width: 400,
-    height: 600,
-    focused: true
-  }).then((window) => {
-    popupWindowId = window.id || null;
-    if (popupWindowId) {
-      // Wait a short moment for the window to initialize
-      setTimeout(() => {
-        chrome.runtime.sendMessage({ 
-          type: 'LOADING_STATE_CHANGED', 
-          loading: state.isLoading 
-        }, (response) => {
-          if (chrome.runtime.lastError) {
-            console.log('Initial loading state message failed:', chrome.runtime.lastError)
-          }
-        });
-      }, 500);
-    }
-  });
-})
-
-// Track window closure
-chrome.windows.onRemoved.addListener((windowId) => {
-  if (windowId === popupWindowId) {
-    popupWindowId = null;
-  }
-});
-
-// Update message broadcasting
-function broadcastToPopup(message: any) {
-  if (popupWindowId) {
-    chrome.runtime.sendMessage(message, (response) => {
-      if (chrome.runtime.lastError) {
-        console.log('Failed to send message to popup:', chrome.runtime.lastError)
-        if (chrome.runtime.lastError.message.includes('Receiving end does not exist')) {
-          popupWindowId = null
-        }
-      }
-    })
-  }
-}
-
-chrome.runtime.onConnect.addListener((port) => {
-  console.log(`Connected to port: ${port.name}`);
-  
-  port.onMessage.addListener((msg) => {
-    console.log('Received message on port:', msg);
-    // Handle incoming messages here
-  });
-
-  port.onDisconnect.addListener(() => {
-    console.log(`Port ${port.name} disconnected.`);
-  });
-});

@@ -7,7 +7,9 @@ const config: Configuration = {
   entry: {
     background: './src/background/background.ts',
     content: './src/content/content.ts',
-    window: './src/ui/window.ts'
+    window: './src/ui/window.ts',
+    sidepanel: './src/ui/sidepanel.ts',
+    helpers: './src/utils/helpers.ts'
   },
   output: {
     path: path.resolve(__dirname, 'dist'),
@@ -43,6 +45,10 @@ const config: Configuration = {
         {
           from: 'src/ui/window.html',
           to: 'window.html'
+        },
+        {
+          from: 'src/ui/sidepanel.html',
+          to: 'sidepanel.html'
         },
         {
           from: 'src/assets',

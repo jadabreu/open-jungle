@@ -8,7 +8,7 @@ const config = {
   entry: {
     content: './src/content/content.ts',
     background: './src/background/background.ts',
-    window: './src/ui/window.ts',
+    sidepanel: './src/ui/sidepanel.ts',
     helpers: './src/utils/helpers.ts'
   },
   output: {
@@ -23,7 +23,7 @@ const config = {
     }
   },
   resolve: {
-    extensions: ['.ts', '.js', '.css']
+    extensions: ['.tsx', '.ts', '.js', '.css']
   },
   module: {
     rules: [
@@ -58,12 +58,32 @@ const config = {
       patterns: [
         { from: 'src/assets', to: 'assets' },
         { from: 'src/manifest.json', to: 'manifest.json' },
-        { from: 'src/ui/window.html', to: 'window.html' }
+        {
+          from: 'src/ui/sidepanel.html',
+          to: 'sidepanel.html',
+          transform(content) {
+            return content
+              .toString()
+              .replace(
+                '<link rel="stylesheet" href="styles/sidepanel.css">',
+                '<link rel="stylesheet" href="styles/sidepanel.css">\n    <link rel="stylesheet" href="styles/common.css">'
+              );
+          }
+        }
       ]
     })
   ],
   optimization: {
-    splitChunks: false
+    splitChunks: {
+      cacheGroups: {
+        styles: {
+          name: 'styles',
+          type: 'css/mini-extract',
+          chunks: 'all',
+          enforce: true
+        }
+      }
+    }
   },
   devtool: 'source-map'
 };
